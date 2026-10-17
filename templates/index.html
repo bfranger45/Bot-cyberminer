@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CyberMiner P2P</title>
+    <!-- SDK oficial de Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 15px;
+            user-select: none;
+        }
+        .header {
+            margin-top: 10px;
+        }
+        .score-box {
+            font-size: 36px;
+            font-weight: bold;
+            color: #00e676;
+            margin: 15px 0;
+        }
+        .stats {
+            font-size: 14px;
+            color: #b0bec5;
+        }
+        .miner-btn {
+            background: radial-gradient(circle, #00e676 0%, #008e4c 100%);
+            border: none;
+            border-radius: 50%;
+            width: 170px;
+            height: 170px;
+            font-size: 60px;
+            color: white;
+            margin: 25px auto;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(0, 230, 118, 0.4);
+            transition: transform 0.05s;
+        }
+        .miner-btn:active {
+            transform: scale(0.93);
+        }
+        .shop {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .btn-upgrade {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-upgrade:active {
+            background-color: #2a2a2a;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>⚡ CyberMiner P2P</h2>
+        <div class="stats">
+            <span id="rate-click">+1 /clic</span> | 
+            <span id="rate-auto">0 /seg</span>
+        </div>
+    </div>
+
+    <div class="score-box">
+        <span id="puntos">0</span> GH/s
+    </div>
+
+    <button class="miner-btn" onclick="minar()">⛏️</button>
+
+    <div class="shop">
+        <h3>🛒 Tienda de Mejoras</h3>
+        <button class="btn-upgrade" onclick="comprar('clic')">
+            <span>⚡ Mejorar Clic (+1)</span>
+            <span>Coste: 50 GH/s</span>
+        </button>
+        <button class="btn-upgrade" onclick="comprar('auto')">
+            <span>💻 Rig de Minería Auto (+5/s)</span>
+            <span>Coste: 200 GH/s</span>
+        </button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let userId = tg.initDataUnsafe?.user?.id || "usuario_demo";
+        let autoRate = 0;
+
+        // Cargar estado inicial
+        fetch(`/api/estado/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                actualizarPantalla(data);
+            });
+
+        function actualizarPantalla(data) {
+            document.getElementById("puntos").innerText = data.puntos;
+            document.getElementById("rate-click").innerText = `+${data.por_clic} /clic`;
+            document.getElementById("rate-auto").innerText = `${data.auto_mineria_por_segundo} /seg`;
+            autoRate = data.auto_mineria_por_segundo;
+        }
+
+        function minar() {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred("medium");
+            }
+
+            fetch('/api/click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById("puntos").innerText = data.puntos;
+                }
+            });
+        }
+
+        function comprar(tipo) {
+            fetch('/api/comprar_mejora', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, tipo: tipo })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    actualizarPantalla(data.user);
+                } else {
+                    alert(data.error);
+                }
+            });
+        }
+
+        // Bucle de minería automática cada segundo
+        setInterval(() => {
+            if (autoRate > 0) {
+                let puntosElem = document.getElementById("puntos");
+                puntosElem.innerText = parseInt(puntosElem.innerText) + autoRate;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
+
