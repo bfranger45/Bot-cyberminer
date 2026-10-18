@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>CyberMiner P2P</title>
     <style>
         body {
@@ -11,27 +11,29 @@
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 0;
-            padding: 20px;
+            padding: 10px 10px 70px 10px;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .container {
             max-width: 400px;
             margin: 0 auto;
         }
         .stats {
-            font-size: 14px;
+            font-size: 13px;
             color: #94a3b8;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         #balance {
-            font-size: 38px;
+            font-size: 34px;
             color: #22c55e;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         /* Bloque interactivo estilo juego */
         .mining-block {
-            width: 200px;
-            height: 200px;
+            width: 190px;
+            height: 190px;
             background: linear-gradient(135deg, #1e293b, #334155);
             border: 4px solid #3b82f6;
             border-radius: 20px;
@@ -42,12 +44,11 @@
             justify-content: center;
             cursor: pointer;
             position: relative;
-            user-select: none;
             box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
-            transition: transform 0.08s ease;
+            touch-action: manipulation;
         }
         .mining-block:active {
-            transform: scale(0.94);
+            transform: scale(0.95);
         }
         /* Barras de progreso */
         .bar-container {
@@ -55,90 +56,194 @@
             background: #334155;
             border-radius: 10px;
             overflow: hidden;
-            margin: 5px auto 12px auto;
+            margin: 4px auto 10px auto;
             height: 10px;
         }
         .bar-fill {
             height: 100%;
             width: 100%;
-            transition: width 0.2s ease;
+            transition: width 0.15s ease;
         }
         #energy-fill { background: #eab308; }
         #hp-fill { background: #ef4444; }
 
-        /* Efecto de texto flotante al hacer clic */
+        /* Efecto de texto flotante */
         .floating-text {
             position: absolute;
             color: #22c55e;
             font-weight: bold;
-            font-size: 18px;
-            animation: floatUp 0.7s ease-out forwards;
+            font-size: 20px;
+            animation: floatUp 0.6s ease-out forwards;
             pointer-events: none;
         }
         @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-45px); }
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
         }
 
-        /* Tienda de mejoras */
-        .shop {
-            margin-top: 25px;
+        /* Secciones de pestañas */
+        .tab-section {
+            display: none;
         }
-        .shop-btn {
+        .tab-section.active {
+            display: block;
+        }
+
+        /* Tarjetas de Tienda y Misiones */
+        .card-item {
             background: #1e293b;
-            border: 1px solid #475569;
-            color: white;
+            border: 1px solid #334155;
             padding: 12px;
-            border-radius: 10px;
-            width: 100%;
+            border-radius: 12px;
             margin-bottom: 10px;
-            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 14px;
+            text-align: left;
         }
-        .shop-btn:hover {
-            border-color: #3b82f6;
+        .card-info h4 { margin: 0 0 4px 0; font-size: 14px; color: #f8fafc; }
+        .card-info p { margin: 0; font-size: 11px; color: #94a3b8; }
+        .action-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
         }
+        .action-btn:active { background: #2563eb; }
+
+        /* Barra de navegación inferior fija */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #090d16;
+            border-top: 1px solid #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        .nav-item span { font-size: 20px; }
+        .nav-item.active { color: #3b82f6; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>⚡ CyberMiner P2P</h2>
-        <div class="stats" id="stats-text">+1 / clic | 0 / seg</div>
-        <div id="balance">0.0 GH/s</div>
 
-        <!-- Barra de Energía -->
-        <div class="stats">Energía: <span id="energy-text">500/500</span></div>
-        <div class="bar-container">
-            <div id="energy-fill" class="bar-fill"></div>
+        <!-- SECCIÓN 1: MINERÍA -->
+        <div id="tab-minar" class="tab-section active">
+            <div class="stats" id="stats-text">+1 / clic | 0 / seg</div>
+            <div id="balance">0.0 GH/s</div>
+
+            <div class="stats">Energía: <span id="energy-text">500/500</span></div>
+            <div class="bar-container">
+                <div id="energy-fill" class="bar-fill"></div>
+            </div>
+
+            <div class="stats">Muro de Seguridad HP: <span id="hp-text">100/100</span></div>
+            <div class="bar-container">
+                <div id="hp-fill" class="bar-fill"></div>
+            </div>
+
+            <!-- Botón interactivo optimizado para móviles -->
+            <div class="mining-block" id="click-btn">
+                <span style="font-size: 55px;">🧱</span>
+                <p style="margin: 5px 0 0 0; font-size: 13px; color: #93c5fd;">¡Golpear Muro!</p>
+            </div>
         </div>
 
-        <!-- Bloque de Datos con HP -->
-        <div class="stats">Muro de Seguridad HP: <span id="hp-text">100/100</span></div>
-        <div class="bar-container">
-            <div id="hp-fill" class="bar-fill"></div>
+        <!-- SECCIÓN 2: TIENDA & RIGS P2P -->
+        <div id="tab-tienda" class="tab-section">
+            <h3 style="margin-bottom: 12px; color: #f8fafc;">🛒 Mercado de Equipos P2P</h3>
+            
+            <div class="card-item">
+                <div class="card-info">
+                    <h4>⚡ Mejorar Clic</h4>
+                    <p>Aumenta +1 GH/s por golpe al muro.</p>
+                </div>
+                <button class="action-btn" onclick="comprarMejora('clic')">50 GH/s</button>
+            </div>
+
+            <div class="card-item">
+                <div class="card-info">
+                    <h4>💻 Rig de Minería Auto</h4>
+                    <p>Genera +5 GH/s automáticos por segundo.</p>
+                </div>
+                <button class="action-btn" onclick="comprarMejora('auto')">200 GH/s</button>
+            </div>
+
+            <div class="card-item">
+                <div class="card-info">
+                    <h4>🖥️ Servidor Cloud P2P Pro</h4>
+                    <p>Granja dedicada: +25 GH/s por segundo.</p>
+                </div>
+                <button class="action-btn" onclick="alert('¡Próximamente disponible!')">1,000 GH/s</button>
+            </div>
         </div>
 
-        <div class="mining-block" id="click-btn">
-            <span style="font-size: 55px;">🧱</span>
-            <p style="margin: 5px 0 0 0; font-size: 13px; color: #93c5fd;">¡Golpear Muro!</p>
+        <!-- SECCIÓN 3: MISIONES -->
+        <div id="tab-misiones" class="tab-section">
+            <h3 style="margin-bottom: 12px; color: #f8fafc;">📋 Misiones Diarias</h3>
+            
+            <div class="card-item">
+                <div class="card-info">
+                    <h4>📢 Únete al Canal Oficial</h4>
+                    <p>Recibe un bono inicial de 500 GH/s.</p>
+                </div>
+                <button class="action-btn" onclick="alert('¡Misión completada!')">Reclamar</button>
+            </div>
+
+            <div class="card-item">
+                <div class="card-info">
+                    <h4>🔥 Rompe 10 Muros</h4>
+                    <p>Gana recompensas por destruir muros de seguridad.</p>
+                </div>
+                <button class="action-btn" style="background: #475569;" disabled>En Proceso</button>
+            </div>
         </div>
 
-        <!-- Tienda -->
-        <div class="shop">
-            <h3 style="margin-bottom: 10px;">🛒 Tienda de Mejoras</h3>
-            <button class="shop-btn" onclick="comprarMejora('clic')">
-                <span>⚡ Mejorar Clic (+1)</span>
-                <span style="color: #eab308; font-weight: bold;">50 GH/s</span>
-            </button>
-            <button class="shop-btn" onclick="comprarMejora('auto')">
-                <span>💻 Rig Minería Auto (+5/s)</span>
-                <span style="color: #eab308; font-weight: bold;">200 GH/s</span>
-            </button>
+        <!-- SECCIÓN 4: AMIGOS / REFERIDOS -->
+        <div id="tab-amigos" class="tab-section">
+            <h3 style="margin-bottom: 12px; color: #f8fafc;">👥 Red P2P de Amigos</h3>
+            <div style="background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                <p style="font-size: 13px; color: #94a3b8; margin: 0 0 10px 0;">Invita amigos y gana el 10% de lo que minen en la red P2P.</p>
+                <button class="action-btn" style="width: 100%; padding: 12px;" onclick="invitarAmigos()">🔗 Compartir Enlace de Invitación</button>
+            </div>
         </div>
     </div>
+
+    <!-- MENÚ DE NAVEGACIÓN INFERIOR -->
+    <nav class="nav-bar">
+        <button class="nav-item active" onclick="cambiarTab('minar', this)">
+            <span>⛏️</span>Minar
+        </button>
+        <button class="nav-item" onclick="cambiarTab('tienda', this)">
+            <span>🛒</span>Tienda
+        </button>
+        <button class="nav-item" onclick="cambiarTab('misiones', this)">
+            <span>📋</span>Misiones
+        </button>
+        <button class="nav-item" onclick="cambiarTab('amigos', this)">
+            <span>👥</span>Amigos
+        </button>
+    </nav>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -179,45 +284,53 @@
             document.getElementById('hp-fill').style.width = (bloqueHp / bloqueMaxHp * 100) + '%';
         }
 
-        // Lógica de clics en el muro
-        document.getElementById('click-btn').addEventListener('click', async (e) => {
-            if (energia < 1) {
-                return; // Sin energía
-            }
+        // --- SISTEMA DE TACTO OPTIMIZADO PARA MÓVILES Y TELEGRAM ---
+        const clickBtn = document.getElementById('click-btn');
+
+        function realizarGolpe(e) {
+            e.preventDefault(); // Evita comportamientos extraños de zoom/scroll
+            if (energia < 1) return;
 
             energia -= 1;
             bloqueHp -= player.por_clic;
 
-            // Mostrar número flotante donde hizo clic
-            crearTextoFlotante(e, `+${player.por_clic}`);
+            // Obtener coordenadas seguras para el texto flotante
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
 
-            // Si rompe el bloque, da recompensa extra y renueva el bloque con más dureza
+            crearTextoFlotanteCoordenadas(clientX, clientY, `+${player.por_clic}`);
+
             if (bloqueHp <= 0) {
                 let bono = bloqueMaxHp * 0.4;
                 player.puntos += bono;
                 bloqueMaxHp = Math.floor(bloqueMaxHp * 1.15);
                 bloqueHp = bloqueMaxHp;
-                crearTextoFlotante(e, "¡BLOQUE ROTO! 🚀", "#eab308");
+                crearTextoFlotanteCoordenadas(clientX, clientY, "¡BLOQUE ROTO! 🚀", "#eab308");
             }
 
             player.puntos += player.por_clic;
             actualizarUI();
 
-            try {
-                await fetch('/api/click', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: telegramId })
-                });
-            } catch (err) {
-                console.error("Error al sincronizar clic:", err);
-            }
-        });
+            // Sincronizar con el backend
+            fetch('/api/click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: telegramId })
+            }).catch(err => console.error("Error al sincronizar clic:", err));
+        }
 
-        function crearTextoFlotante(event, texto, color = "#22c55e") {
-            const rect = event.target.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+        // Escuchamos tanto clics como toques táctiles directos en pantalla
+        clickBtn.addEventListener('click', realizarGolpe);
+        clickBtn.addEventListener('touchstart', realizarGolpe, { passive: false });
+
+        function crearTextoFlotanteCoordenadas(clientX, clientY, texto, color = "#22c55e") {
+            const rect = clickBtn.getBoundingClientRect();
+            const x = clientX ? clientX - rect.left : rect.width / 2;
+            const y = clientY ? clientY - rect.top : rect.height / 2;
 
             const el = document.createElement('div');
             el.className = 'floating-text';
@@ -226,8 +339,17 @@
             el.style.top = y + 'px';
             el.style.color = color;
 
-            document.getElementById('click-btn').appendChild(el);
-            setTimeout(() => el.remove(), 700);
+            clickBtn.appendChild(el);
+            setTimeout(() => el.remove(), 600);
+        }
+
+        // --- NAVEGACIÓN ENTRE PESTAÑAS ---
+        function cambiarTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById('tab-' + tabId).classList.add('active');
+            btnElement.classList.add('active');
         }
 
         async function comprarMejora(tipo) {
@@ -251,10 +373,16 @@
             }
         }
 
+        function invitarAmigos() {
+            const botUsername = "CyberminerBot"; // Ajusta si tu bot tiene otro nombre de usuario
+            const inviteLink = `https://t.me/share/url?url=https://t.me/${botUsername}?start=${telegramId}&text=¡Únete%20a%20CyberMiner%20P2P%20y%20empieza%20a%20minar%20criptomonedas%20conmigo!`;
+            window.open(inviteLink, '_blank');
+        }
+
         // Recuperar energía y aplicar minería automática cada segundo
         setInterval(() => {
             if (energia < maxEnergia) {
-                energia = Math.min(maxEnergia, energia + 3); // Recupera 3 de energía por segundo
+                energia = Math.min(maxEnergia, energia + 3);
             }
             if (player.auto_mineria_por_segundo > 0) {
                 player.puntos += player.auto_mineria_por_segundo;
