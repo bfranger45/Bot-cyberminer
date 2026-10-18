@@ -1,115 +1,98 @@
 from flask import Flask, render_template, request, jsonify
-from supabase import create_client, Client
 import os
+from supabase import create_client, Client
 
 app = Flask(__name__)
 
-# Configuración de Supabase con las variables de entorno de Render
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
+url = os.environ.get("SUPABASE_URL")
+key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
-@app.route("/")
+@app.route('/')
 def index():
-    # Renderiza la interfaz grafica del juego
-    return render_template("index.html")
+    return render_template('index.html')
 
-@app.route("/api/estado/<int:user_id>", methods=["GET"])
-def obtener_usuario(user_id):
+@app.route('/api/estado/<int:user_id>', methods=['GET'])
+def obtener_estado(user_id):
     try:
-        response = supabase.table('players').select("*").eq('telegram_id', user_id).execute()
-        if response.data:
-            db_user = response.data[0]
-            # Mapeamos los campos de la base de datos a las variables que usa tu interfaz
-            user_data = {
-                "puntos": db_user['balance'],
-                "por_clic": db_user['click_power'],
-                "auto_mineria_por_segundo": db_user['auto_power']
-            }
-            return jsonify(user_data)
+        response = supabase.table('users').select('*').eq('telegram_id', user_id).execute()
+        data = response.data
+        if data and len(data) > 0:
+            return jsonify(data[0])
         else:
-            # Si el usuario no existe en Supabase, lo creamos con valores iniciales
-            new_user = {
-                "telegram_id": user_id,
-                "balance": 0.0,
-                "click_power": 1,
-                "auto_power": 0
+            # Crear usuario por defecto si es su primera vez
+            nuevo_usuario = {
+                'telegram_id': user_id,
+                'puntos': 0.0,
+                'por_clic': 1,
+                'auto_mineria_por_segundo': 0
             }
-            supabase.table('players').insert(new_user).execute()
-            return jsonify({
-                "puntos": 0.0,
-                "por_clic": 1,
-                "auto_mineria_por_segundo": 0
-            })
+            supabase.table('users').insert(nuevo_usuario).execute()
+            return jsonify(nuevo_usuario)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-@app.route("/api/click", methods=["POST"])
-def registrar_click():
-    data = request.json or {}
-    user_id = data.get("user_id")
-    if not user_id:
-        return jsonify({"error": "ID invalido"}), 400
-    
+@app.route('/api/sincronizar', methods=['POST'])
+def sincronizar():
     try:
-        # Obtenemos el usuario actual de Supabase
-        response = supabase.table('players').select("*").eq('telegram_id', user_id).execute()
-        if response.data:
-            current = response.data[0]
-            nuevo_puntos = current['balance'] + current['click_power']
-            
-            # Actualizamos en la base de datos
-            supabase.table('players').update({"balance": nuevo_puntos}).eq('telegram_id', user_id).execute()
-            return jsonify({"success": True, "puntos": nuevo_puntos})
-        else:
-            return jsonify({"error": "Usuario no encontrado"}), 404
+        data = request.json
+        user_id = data.get('user_id')
+        puntos = data.get('puntos')
+        
+        # Actualiza el puntaje en la base de datos de forma limpia
+        supabase.table('users').update({'puntos': puntos}).eq('telegram_id', user_id).execute()
+        return jsonify({'success': True})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route("/api/comprar_mejora", methods=["POST"])
+@app.route('/api/comprar_mejora', methods=['POST'])
 def comprar_mejora():
-    data = request.json or {}
-    user_id = data.get("user_id")
-    tipo = data.get("tipo") # "clic" o "auto"
-    
-    if not user_id:
-        return jsonify({"error": "ID invalido"}), 400
-
     try:
-        response = supabase.table('players').select("*").eq('telegram_id', user_id).execute()
-        if not response.data:
-            return jsonify({"error": "Usuario no encontrado"}), 404
-            
-        current = response.data[0]
-        puntos = current['balance']
-        click_power = current['click_power']
-        auto_power = current['auto_power']
-        
-        if tipo == "clic" and puntos >= 50:
-            puntos -= 50
-            click_power += 1
-        elif tipo == "auto" and puntos >= 200:
-            puntos -= 200
-            auto_power += 5
-        else:
-            return jsonify({"success": False, "error": "Puntos insuficientes"}), 400
-            
-        # Guardamos los cambios en Supabase
-        supabase.table('players').update({
-            "balance": puntos,
-            "click_power": click_power,
-            "auto_power": auto_power
-        }).eq('telegram_id', user_id).execute()
-        
-        user_response = {
-            "puntos": puntos,
-            "por_clic": click_power,
-            "auto_mineria_por_segundo": auto_power
-        }
-        return jsonify({"success": True, "user": user_response})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        data = request.json
+        user_id = data.get('user_id')
+        tipo = data.get('tipo')
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+        res = supabase.table('users').select('*').eq('telegram_id', user_id).execute()
+        if not res.data:
+            return jsonify({'success': False, 'error': 'Usuario no encontrado'})
+        
+        user = res.data[0]
+        puntos = user['puntos']
+        por_clic = user['por_clic']
+        auto = user['auto_mineria_por_segundo']
+
+        if tipo == 'clic':
+            costo = 50
+            if puntos >= costo:
+                puntos -= costo
+                por_clic += 1
+            else:
+                return jsonify({'success': False, 'error': 'Puntos insuficientes'})
+        elif tipo == 'auto':
+            costo = 200
+            if puntos >= costo:
+                puntos -= costo
+                auto += 5
+            else:
+                return jsonify({'success': False, 'error': 'Puntos insuficientes'})
+
+        supabase.table('users').update({
+            'puntos': puntos,
+            'por_clic': por_clic,
+            'auto_mineria_por_segundo': auto
+        }).eq('telegram_id', user_id).execute()
+
+        return jsonify({
+            'success': True,
+            'user': {
+                'puntos': puntos,
+                'por_clic': por_clic,
+                'auto_mineria_por_segundo': auto
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
 
