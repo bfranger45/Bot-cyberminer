@@ -2,162 +2,267 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CyberMiner P2P</title>
-    <!-- SDK oficial de Telegram WebApp -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            background-color: #121212;
+            background-color: #0f172a;
             color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
             text-align: center;
             margin: 0;
-            padding: 15px;
-            user-select: none;
+            padding: 20px;
         }
-        .header {
-            margin-top: 10px;
-        }
-        .score-box {
-            font-size: 36px;
-            font-weight: bold;
-            color: #00e676;
-            margin: 15px 0;
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
         }
         .stats {
             font-size: 14px;
-            color: #b0bec5;
+            color: #94a3b8;
+            margin-bottom: 5px;
         }
-        .miner-btn {
-            background: radial-gradient(circle, #00e676 0%, #008e4c 100%);
-            border: none;
-            border-radius: 50%;
-            width: 170px;
-            height: 170px;
-            font-size: 60px;
-            color: white;
-            margin: 25px auto;
-            cursor: pointer;
-            box-shadow: 0 0 25px rgba(0, 230, 118, 0.4);
-            transition: transform 0.05s;
+        #balance {
+            font-size: 38px;
+            color: #22c55e;
+            font-weight: bold;
+            margin-bottom: 15px;
         }
-        .miner-btn:active {
-            transform: scale(0.93);
-        }
-        .shop {
-            margin-top: 20px;
+        /* Bloque interactivo estilo juego */
+        .mining-block {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border: 4px solid #3b82f6;
+            border-radius: 20px;
+            margin: 15px auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+            transition: transform 0.08s ease;
         }
-        .btn-upgrade {
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            color: #fff;
+        .mining-block:active {
+            transform: scale(0.94);
+        }
+        /* Barras de progreso */
+        .bar-container {
+            width: 85%;
+            background: #334155;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px auto 12px auto;
+            height: 10px;
+        }
+        .bar-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.2s ease;
+        }
+        #energy-fill { background: #eab308; }
+        #hp-fill { background: #ef4444; }
+
+        /* Efecto de texto flotante al hacer clic */
+        .floating-text {
+            position: absolute;
+            color: #22c55e;
+            font-weight: bold;
+            font-size: 18px;
+            animation: floatUp 0.7s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-45px); }
+        }
+
+        /* Tienda de mejoras */
+        .shop {
+            margin-top: 25px;
+        }
+        .shop-btn {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: white;
             padding: 12px;
             border-radius: 10px;
-            font-size: 14px;
+            width: 100%;
+            margin-bottom: 10px;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 14px;
         }
-        .btn-upgrade:active {
-            background-color: #2a2a2a;
+        .shop-btn:hover {
+            border-color: #3b82f6;
         }
     </style>
 </head>
 <body>
-
-    <div class="header">
+    <div class="container">
         <h2>⚡ CyberMiner P2P</h2>
-        <div class="stats">
-            <span id="rate-click">+1 /clic</span> | 
-            <span id="rate-auto">0 /seg</span>
+        <div class="stats" id="stats-text">+1 / clic | 0 / seg</div>
+        <div id="balance">0.0 GH/s</div>
+
+        <!-- Barra de Energía -->
+        <div class="stats">Energía: <span id="energy-text">500/500</span></div>
+        <div class="bar-container">
+            <div id="energy-fill" class="bar-fill"></div>
+        </div>
+
+        <!-- Bloque de Datos con HP -->
+        <div class="stats">Muro de Seguridad HP: <span id="hp-text">100/100</span></div>
+        <div class="bar-container">
+            <div id="hp-fill" class="bar-fill"></div>
+        </div>
+
+        <div class="mining-block" id="click-btn">
+            <span style="font-size: 55px;">🧱</span>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: #93c5fd;">¡Golpear Muro!</p>
+        </div>
+
+        <!-- Tienda -->
+        <div class="shop">
+            <h3 style="margin-bottom: 10px;">🛒 Tienda de Mejoras</h3>
+            <button class="shop-btn" onclick="comprarMejora('clic')">
+                <span>⚡ Mejorar Clic (+1)</span>
+                <span style="color: #eab308; font-weight: bold;">50 GH/s</span>
+            </button>
+            <button class="shop-btn" onclick="comprarMejora('auto')">
+                <span>💻 Rig Minería Auto (+5/s)</span>
+                <span style="color: #eab308; font-weight: bold;">200 GH/s</span>
+            </button>
         </div>
     </div>
 
-    <div class="score-box">
-        <span id="puntos">0</span> GH/s
-    </div>
-
-    <button class="miner-btn" onclick="minar()">⛏️</button>
-
-    <div class="shop">
-        <h3>🛒 Tienda de Mejoras</h3>
-        <button class="btn-upgrade" onclick="comprar('clic')">
-            <span>⚡ Mejorar Clic (+1)</span>
-            <span>Coste: 50 GH/s</span>
-        </button>
-        <button class="btn-upgrade" onclick="comprar('auto')">
-            <span>💻 Rig de Minería Auto (+5/s)</span>
-            <span>Coste: 200 GH/s</span>
-        </button>
-    </div>
-
     <script>
-        let tg = window.Telegram.WebApp;
+        const tg = window.Telegram.WebApp;
         tg.expand();
+        const user = tg.initDataUnsafe?.user;
+        const telegramId = user ? user.id : 123456789;
 
-        let userId = tg.initDataUnsafe?.user?.id || "usuario_demo";
-        let autoRate = 0;
+        let player = {
+            puntos: 0,
+            por_clic: 1,
+            auto_mineria_por_segundo: 0
+        };
 
-        // Cargar estado inicial
-        fetch(`/api/estado/${userId}`)
-            .then(res => res.json())
-            .then(data => {
-                actualizarPantalla(data);
-            });
+        let energia = 500;
+        let maxEnergia = 500;
+        let bloqueHp = 100;
+        let bloqueMaxHp = 100;
 
-        function actualizarPantalla(data) {
-            document.getElementById("puntos").innerText = data.puntos;
-            document.getElementById("rate-click").innerText = `+${data.por_clic} /clic`;
-            document.getElementById("rate-auto").innerText = `${data.auto_mineria_por_segundo} /seg`;
-            autoRate = data.auto_mineria_por_segundo;
+        async function cargarEstado() {
+            try {
+                const res = await fetch(`/api/estado/${telegramId}`);
+                const data = await res.json();
+                player.puntos = data.puntos;
+                player.por_clic = data.por_clic;
+                player.auto_mineria_por_segundo = data.auto_mineria_por_segundo;
+                actualizarUI();
+            } catch (e) {
+                console.error("Error al cargar estado:", e);
+            }
         }
 
-        function minar() {
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred("medium");
+        function actualizarUI() {
+            document.getElementById('balance').innerText = player.puntos.toFixed(1) + " GH/s";
+            document.getElementById('stats-text').innerText = `+${player.por_clic} / clic | ${player.auto_mineria_por_segundo} / seg`;
+            document.getElementById('energy-text').innerText = `${Math.floor(energia)}/${maxEnergia}`;
+            document.getElementById('energy-fill').style.width = (energia / maxEnergia * 100) + '%';
+            document.getElementById('hp-text').innerText = `${bloqueHp}/${bloqueMaxHp}`;
+            document.getElementById('hp-fill').style.width = (bloqueHp / bloqueMaxHp * 100) + '%';
+        }
+
+        // Lógica de clics en el muro
+        document.getElementById('click-btn').addEventListener('click', async (e) => {
+            if (energia < 1) {
+                return; // Sin energía
             }
 
-            fetch('/api/click', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById("puntos").innerText = data.puntos;
-                }
-            });
+            energia -= 1;
+            bloqueHp -= player.por_clic;
+
+            // Mostrar número flotante donde hizo clic
+            crearTextoFlotante(e, `+${player.por_clic}`);
+
+            // Si rompe el bloque, da recompensa extra y renueva el bloque con más dureza
+            if (bloqueHp <= 0) {
+                let bono = bloqueMaxHp * 0.4;
+                player.puntos += bono;
+                bloqueMaxHp = Math.floor(bloqueMaxHp * 1.15);
+                bloqueHp = bloqueMaxHp;
+                crearTextoFlotante(e, "¡BLOQUE ROTO! 🚀", "#eab308");
+            }
+
+            player.puntos += player.por_clic;
+            actualizarUI();
+
+            try {
+                await fetch('/api/click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: telegramId })
+                });
+            } catch (err) {
+                console.error("Error al sincronizar clic:", err);
+            }
+        });
+
+        function crearTextoFlotante(event, texto, color = "#22c55e") {
+            const rect = event.target.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.innerText = texto;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.color = color;
+
+            document.getElementById('click-btn').appendChild(el);
+            setTimeout(() => el.remove(), 700);
         }
 
-        function comprar(tipo) {
-            fetch('/api/comprar_mejora', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, tipo: tipo })
-            })
-            .then(res => res.json())
-            .then(data => {
+        async function comprarMejora(tipo) {
+            try {
+                const res = await fetch('/api/comprar_mejora', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: telegramId, tipo: tipo })
+                });
+                const data = await res.json();
                 if (data.success) {
-                    actualizarPantalla(data.user);
+                    player.puntos = data.user.puntos;
+                    player.por_clic = data.user.por_clic;
+                    player.auto_mineria_por_segundo = data.user.auto_mineria_por_segundo;
+                    actualizarUI();
                 } else {
-                    alert(data.error);
+                    alert(data.error || "Puntos insuficientes");
                 }
-            });
+            } catch (err) {
+                console.error("Error al comprar mejora:", err);
+            }
         }
 
-        // Bucle de minería automática cada segundo
+        // Recuperar energía y aplicar minería automática cada segundo
         setInterval(() => {
-            if (autoRate > 0) {
-                let puntosElem = document.getElementById("puntos");
-                puntosElem.innerText = parseInt(puntosElem.innerText) + autoRate;
+            if (energia < maxEnergia) {
+                energia = Math.min(maxEnergia, energia + 3); // Recupera 3 de energía por segundo
             }
+            if (player.auto_mineria_por_segundo > 0) {
+                player.puntos += player.auto_mineria_por_segundo;
+            }
+            actualizarUI();
         }, 1000);
+
+        window.onload = cargarEstado;
     </script>
 </body>
 </html>
