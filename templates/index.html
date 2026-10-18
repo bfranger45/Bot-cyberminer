@@ -30,7 +30,6 @@
             font-weight: bold;
             margin-bottom: 12px;
         }
-        /* Bloque interactivo estilo juego */
         .mining-block {
             width: 190px;
             height: 190px;
@@ -50,7 +49,6 @@
         .mining-block:active {
             transform: scale(0.95);
         }
-        /* Barras de progreso */
         .bar-container {
             width: 85%;
             background: #334155;
@@ -62,12 +60,11 @@
         .bar-fill {
             height: 100%;
             width: 100%;
-            transition: width 0.15s ease;
+            transition: width 0.1s ease;
         }
         #energy-fill { background: #eab308; }
         #hp-fill { background: #ef4444; }
 
-        /* Efecto de texto flotante */
         .floating-text {
             position: absolute;
             color: #22c55e;
@@ -81,15 +78,9 @@
             100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
         }
 
-        /* Secciones de pestañas */
-        .tab-section {
-            display: none;
-        }
-        .tab-section.active {
-            display: block;
-        }
+        .tab-section { display: none; }
+        .tab-section.active { display: block; }
 
-        /* Tarjetas de Tienda y Misiones */
         .card-item {
             background: #1e293b;
             border: 1px solid #334155;
@@ -115,7 +106,6 @@
         }
         .action-btn:active { background: #2563eb; }
 
-        /* Barra de navegación inferior fija */
         .nav-bar {
             position: fixed;
             bottom: 0;
@@ -162,7 +152,6 @@
                 <div id="hp-fill" class="bar-fill"></div>
             </div>
 
-            <!-- Botón interactivo optimizado para móviles -->
             <div class="mining-block" id="click-btn">
                 <span style="font-size: 55px;">🧱</span>
                 <p style="margin: 5px 0 0 0; font-size: 13px; color: #93c5fd;">¡Golpear Muro!</p>
@@ -209,14 +198,6 @@
                 </div>
                 <button class="action-btn" onclick="alert('¡Misión completada!')">Reclamar</button>
             </div>
-
-            <div class="card-item">
-                <div class="card-info">
-                    <h4>🔥 Rompe 10 Muros</h4>
-                    <p>Gana recompensas por destruir muros de seguridad.</p>
-                </div>
-                <button class="action-btn" style="background: #475569;" disabled>En Proceso</button>
-            </div>
         </div>
 
         <!-- SECCIÓN 4: AMIGOS / REFERIDOS -->
@@ -224,25 +205,17 @@
             <h3 style="margin-bottom: 12px; color: #f8fafc;">👥 Red P2P de Amigos</h3>
             <div style="background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
                 <p style="font-size: 13px; color: #94a3b8; margin: 0 0 10px 0;">Invita amigos y gana el 10% de lo que minen en la red P2P.</p>
-                <button class="action-btn" style="width: 100%; padding: 12px;" onclick="invitarAmigos()">🔗 Compartir Enlace de Invitación</button>
+                <button class="action-btn" style="width: 100%; padding: 12px;" onclick="invitarAmigos()">🔗 Compartir Enlace</button>
             </div>
         </div>
     </div>
 
     <!-- MENÚ DE NAVEGACIÓN INFERIOR -->
     <nav class="nav-bar">
-        <button class="nav-item active" onclick="cambiarTab('minar', this)">
-            <span>⛏️</span>Minar
-        </button>
-        <button class="nav-item" onclick="cambiarTab('tienda', this)">
-            <span>🛒</span>Tienda
-        </button>
-        <button class="nav-item" onclick="cambiarTab('misiones', this)">
-            <span>📋</span>Misiones
-        </button>
-        <button class="nav-item" onclick="cambiarTab('amigos', this)">
-            <span>👥</span>Amigos
-        </button>
+        <button class="nav-item active" onclick="cambiarTab('minar', this)"><span>⛏️</span>Minar</button>
+        <button class="nav-item" onclick="cambiarTab('tienda', this)"><span>🛒</span>Tienda</button>
+        <button class="nav-item" onclick="cambiarTab('misiones', this)"><span>📋</span>Misiones</button>
+        <button class="nav-item" onclick="cambiarTab('amigos', this)"><span>👥</span>Amigos</button>
     </nav>
 
     <script>
@@ -261,14 +234,16 @@
         let maxEnergia = 500;
         let bloqueHp = 100;
         let bloqueMaxHp = 100;
+        let datosModificados = false;
 
+        // Cargar estado inicial desde el servidor al abrir
         async function cargarEstado() {
             try {
                 const res = await fetch(`/api/estado/${telegramId}`);
                 const data = await res.json();
-                player.puntos = data.puntos;
-                player.por_clic = data.por_clic;
-                player.auto_mineria_por_segundo = data.auto_mineria_por_segundo;
+                player.puntos = data.puntos || 0;
+                player.por_clic = data.por_clic || 1;
+                player.auto_mineria_por_segundo = data.auto_mineria_por_segundo || 0;
                 actualizarUI();
             } catch (e) {
                 console.error("Error al cargar estado:", e);
@@ -284,17 +259,18 @@
             document.getElementById('hp-fill').style.width = (bloqueHp / bloqueMaxHp * 100) + '%';
         }
 
-        // --- SISTEMA DE TACTO OPTIMIZADO PARA MÓVILES Y TELEGRAM ---
+        // --- MECÁNICA DE GOLPES LOCAL (ULTRA RÁPIDA) ---
         const clickBtn = document.getElementById('click-btn');
 
         function realizarGolpe(e) {
-            e.preventDefault(); // Evita comportamientos extraños de zoom/scroll
+            e.preventDefault();
             if (energia < 1) return;
 
             energia -= 1;
             bloqueHp -= player.por_clic;
+            player.puntos += player.por_clic;
+            datosModificados = true;
 
-            // Obtener coordenadas seguras para el texto flotante
             let clientX = e.clientX;
             let clientY = e.clientY;
             if (e.touches && e.touches.length > 0) {
@@ -302,32 +278,23 @@
                 clientY = e.touches[0].clientY;
             }
 
-            crearTextoFlotanteCoordenadas(clientX, clientY, `+${player.por_clic}`);
+            crearTextoFlotante(clientX, clientY, `+${player.por_clic}`);
 
             if (bloqueHp <= 0) {
                 let bono = bloqueMaxHp * 0.4;
                 player.puntos += bono;
                 bloqueMaxHp = Math.floor(bloqueMaxHp * 1.15);
                 bloqueHp = bloqueMaxHp;
-                crearTextoFlotanteCoordenadas(clientX, clientY, "¡BLOQUE ROTO! 🚀", "#eab308");
+                crearTextoFlotante(clientX, clientY, "¡BLOQUE ROTO! 🚀", "#eab308");
             }
 
-            player.puntos += player.por_clic;
             actualizarUI();
-
-            // Sincronizar con el backend
-            fetch('/api/click', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: telegramId })
-            }).catch(err => console.error("Error al sincronizar clic:", err));
         }
 
-        // Escuchamos tanto clics como toques táctiles directos en pantalla
         clickBtn.addEventListener('click', realizarGolpe);
         clickBtn.addEventListener('touchstart', realizarGolpe, { passive: false });
 
-        function crearTextoFlotanteCoordenadas(clientX, clientY, texto, color = "#22c55e") {
+        function crearTextoFlotante(clientX, clientY, texto, color = "#22c55e") {
             const rect = clickBtn.getBoundingClientRect();
             const x = clientX ? clientX - rect.left : rect.width / 2;
             const y = clientY ? clientY - rect.top : rect.height / 2;
@@ -343,15 +310,15 @@
             setTimeout(() => el.remove(), 600);
         }
 
-        // --- NAVEGACIÓN ENTRE PESTAÑAS ---
+        // --- NAVEGACIÓN ---
         function cambiarTab(tabId, btnElement) {
             document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-
             document.getElementById('tab-' + tabId).classList.add('active');
             btnElement.classList.add('active');
         }
 
+        // --- COMPRAS EN TIENDA ---
         async function comprarMejora(tipo) {
             try {
                 const res = await fetch('/api/comprar_mejora', {
@@ -364,7 +331,9 @@
                     player.puntos = data.user.puntos;
                     player.por_clic = data.user.por_clic;
                     player.auto_mineria_por_segundo = data.user.auto_mineria_por_segundo;
+                    datosModificados = false;
                     actualizarUI();
+                    alert('¡Mejora comprada con éxito!');
                 } else {
                     alert(data.error || "Puntos insuficientes");
                 }
@@ -374,21 +343,37 @@
         }
 
         function invitarAmigos() {
-            const botUsername = "CyberminerBot"; // Ajusta si tu bot tiene otro nombre de usuario
-            const inviteLink = `https://t.me/share/url?url=https://t.me/${botUsername}?start=${telegramId}&text=¡Únete%20a%20CyberMiner%20P2P%20y%20empieza%20a%20minar%20criptomonedas%20conmigo!`;
+            const inviteLink = `https://t.me/share/url?url=https://t.me/CyberminerBot?start=${telegramId}&text=¡Únete%20a%20CyberMiner%20P2P!`;
             window.open(inviteLink, '_blank');
         }
 
-        // Recuperar energía y aplicar minería automática cada segundo
+        // --- BUCLE DE JUEGO (ENERGÍA Y MINERÍA AUTOMÁTICA) ---
         setInterval(() => {
             if (energia < maxEnergia) {
                 energia = Math.min(maxEnergia, energia + 3);
             }
             if (player.auto_mineria_por_segundo > 0) {
                 player.puntos += player.auto_mineria_por_segundo;
+                datosModificados = true;
             }
             actualizarUI();
         }, 1000);
+
+        // --- SINCRONIZACIÓN INTELIGENTE EN SEGUNDO PLANO (CADA 15 SEGUNDOS) ---
+        setInterval(async () => {
+            if (datosModificados) {
+                try {
+                    await fetch('/api/sincronizar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: telegramId, puntos: player.puntos })
+                    });
+                    datosModificados = false;
+                } catch (e) {
+                    console.error("Error al sincronizar en segundo plano:", e);
+                }
+            }
+        }, 15000);
 
         window.onload = cargarEstado;
     </script>
